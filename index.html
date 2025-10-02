@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>ESP8266 Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,29 +15,35 @@
       text-align: center;
       margin-bottom: 30px;
     }
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
+    .gauges {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 40px;
     }
     .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      padding: 20px;
       text-align: center;
     }
     canvas {
-      width: 100% !important;
-      height: 250px !important;
+      max-width: 100%;
+    }
+    .charts {
+      display: flex;
+      justify-content: space-around;
+    }
+    .chart-box {
+      width: 48%;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
   <h2>📡 ESP8266 Sensor Dashboard</h2>
-  
-  <!-- Hàng 1: Gauge -->
-  <div class="dashboard">
+
+  <!-- Hàng trên: Gauge -->
+  <div class="gauges">
     <div class="card">
       <h3>Nhiệt độ</h3>
       <canvas id="gaugeTemp"></canvas>
@@ -52,130 +58,117 @@
     </div>
   </div>
 
-  <!-- Hàng 2: Chart -->
-  <div class="dashboard">
-    <div class="card" style="grid-column: span 2;">
-      <h3>Chart Nhiệt độ</h3>
+  <!-- Hàng dưới: Biểu đồ -->
+  <div class="charts">
+    <div class="chart-box">
+      <h3>Nhiệt độ theo thời gian</h3>
       <canvas id="chartTemp"></canvas>
     </div>
-    <div class="card" style="grid-column: span 2;">
-      <h3>Chart Điện áp</h3>
+    <div class="chart-box">
+      <h3>Điện áp theo thời gian</h3>
       <canvas id="chartVolt"></canvas>
     </div>
   </div>
 
   <script>
-    const token = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI";
-
     // Hàm tạo gauge
-    function createGauge(ctx, max, color, unit="") {
-      return new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          datasets: [{
-            data: [0, max],
-            backgroundColor: [color, "#eee"],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          circumference: 180,
-          rotation: -90,
-          cutout: "70%",
-          plugins: {
-            datalabels: {
-              formatter: (value, context) => {
-                if (context.dataIndex === 0) {
-                  return value.toFixed(1) + unit;
-                }
-                return "";
-              },
-              color: "#333",
-              font: { size: 22, weight: "bold" },
-              anchor: "center",
-              align: "center"
-            },
-            legend: { display: false },
-            tooltip: { enabled: false }
-          }
-        },
-        plugins: [ChartDataLabels]
-      });
+    function createGauge(elementId, min, max, unit, color) {
+      return new RadialGauge({
+        renderTo: elementId,
+        width: 250,
+        height: 250,
+        units: unit,
+        minValue: min,
+        maxValue: max,
+        majorTicks: [min, (max/2), max],
+        minorTicks: 2,
+        strokeTicks: true,
+        highlights: [{ from: min, to: max, color: color }],
+        colorPlate: "#fff",
+        colorNumbers: "#000",
+        valueBox: true,
+        animation: true,
+        animationDuration: 500,
+        animationRule: "linear",
+        needle: true,
+        needleCircleSize: 8,
+        borders: false,
+        value: 0
+      }).draw();
     }
 
-    // Tạo gauge
-    const gaugeTemp = createGauge(document.getElementById("gaugeTemp"), 100, "#673ab7", "°C");
-    const gaugeHumi = createGauge(document.getElementById("gaugeHumi"), 100, "#009688", "%");
-    const gaugeVolt = createGauge(document.getElementById("gaugeVolt"), 100, "#e91e63", "V");
+    // Tạo 3 gauge
+    const gaugeTemp = createGauge("gaugeTemp", 0, 100, "°C", "rgba(103,58,183,0.3)");
+    const gaugeHumi = createGauge("gaugeHumi", 0, 100, "%", "rgba(0,150,136,0.3)");
+    const gaugeVolt = createGauge("gaugeVolt", 0, 30, "V", "rgba(233,30,99,0.3)");
 
-    // Tạo chart
-    const chartTemp = new Chart(document.getElementById("chartTemp"), {
-      type: "line",
-      data: { labels: [], datasets: [{ label: "Nhiệt độ (°C)", data: [], borderColor: "#3f51b5" }] },
-      options: {
-        scales: {
-          x: { title: { display: true, text: "Thời gian" } },
-          y: { beginAtZero: false }
-        }
-      }
+    // Chart config
+    const ctxTemp = document.getElementById('chartTemp').getContext('2d');
+    const ctxVolt = document.getElementById('chartVolt').getContext('2d');
+
+    const chartTemp = new Chart(ctxTemp, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Nhiệt độ (°C)',
+          borderColor: 'rgba(103,58,183,1)',
+          backgroundColor: 'rgba(103,58,183,0.2)',
+          data: [],
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: { responsive: true }
     });
 
-    const chartVolt = new Chart(document.getElementById("chartVolt"), {
-      type: "line",
-      data: { labels: [], datasets: [{ label: "Điện áp (V)", data: [], borderColor: "#e91e63" }] },
-      options: {
-        scales: {
-          x: { title: { display: true, text: "Thời gian" } },
-          y: { beginAtZero: false }
-        }
-      }
+    const chartVolt = new Chart(ctxVolt, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Điện áp (V)',
+          borderColor: 'rgba(233,30,99,1)',
+          backgroundColor: 'rgba(233,30,99,0.2)',
+          data: [],
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: { responsive: true }
     });
 
-    async function getData() {
-      try {
-        const temp = await fetch(`https://blynk.cloud/external/api/get?token=${token}&v1`).then(r=>r.text());
-        const humi = await fetch(`https://blynk.cloud/external/api/get?token=${token}&v2`).then(r=>r.text());
-        const volt = await fetch(`https://blynk.cloud/external/api/get?token=${token}&v3`).then(r=>r.text());
+    // Cập nhật dữ liệu random mỗi 5 giây
+    setInterval(() => {
+      const now = new Date().toLocaleTimeString();
+      const temp = (20 + Math.random()*10).toFixed(1);
+      const humi = (40 + Math.random()*30).toFixed(1);
+      const volt = (12 + Math.random()*3).toFixed(2);
 
-        const t = parseFloat(temp) || 0;
-        const h = parseFloat(humi) || 0;
-        const v = parseFloat(volt) || 0;
+      // Update gauge
+      gaugeTemp.value = temp;
+      gaugeHumi.value = humi;
+      gaugeVolt.value = volt;
 
-        // Cập nhật gauge
-        gaugeTemp.data.datasets[0].data = [t, 100 - t];
-        gaugeHumi.data.datasets[0].data = [h, 100 - h];
-        gaugeVolt.data.datasets[0].data = [v, 100 - v];
-        gaugeTemp.update();
-        gaugeHumi.update();
-        gaugeVolt.update();
-
-        // Cập nhật chart
-        const now = new Date().toLocaleTimeString();
-        chartTemp.data.labels.push(now);
-        chartTemp.data.datasets[0].data.push(t);
-
-        chartVolt.data.labels.push(now);
-        chartVolt.data.datasets[0].data.push(v);
-
-        // Giữ dữ liệu trong vòng 1 ngày (~ 288 bản ghi nếu mỗi 5s)
-        if (chartTemp.data.labels.length > 288) {
-          chartTemp.data.labels.shift();
-          chartTemp.data.datasets[0].data.shift();
-        }
-        if (chartVolt.data.labels.length > 288) {
-          chartVolt.data.labels.shift();
-          chartVolt.data.datasets[0].data.shift();
-        }
-
-        chartTemp.update();
-        chartVolt.update();
-      } catch (e) {
-        console.error(e);
+      // Update chart nhiệt độ
+      chartTemp.data.labels.push(now);
+      chartTemp.data.datasets[0].data.push(temp);
+      if(chartTemp.data.labels.length > 20) {
+        chartTemp.data.labels.shift();
+        chartTemp.data.datasets[0].data.shift();
       }
-    }
+      chartTemp.update();
 
-    setInterval(getData, 5000);
-    getData();
+      // Update chart điện áp
+      chartVolt.data.labels.push(now);
+      chartVolt.data.datasets[0].data.push(volt);
+      if(chartVolt.data.labels.length > 20) {
+        chartVolt.data.labels.shift();
+        chartVolt.data.datasets[0].data.shift();
+      }
+      chartVolt.update();
+
+    }, 5000);
   </script>
 </body>
 </html>
