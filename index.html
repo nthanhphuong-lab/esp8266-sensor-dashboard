@@ -17,7 +17,7 @@
     }
     .dashboard {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
     }
     .card {
@@ -28,13 +28,15 @@
       text-align: center;
     }
     canvas {
-      max-width: 100%;
-      height: 250px;
+      width: 100% !important;
+      height: 250px !important;
     }
   </style>
 </head>
 <body>
   <h2>📡 ESP8266 Sensor Dashboard</h2>
+  
+  <!-- Hàng 1: Gauge -->
   <div class="dashboard">
     <div class="card">
       <h3>Nhiệt độ</h3>
@@ -45,10 +47,18 @@
       <canvas id="gaugeHumi"></canvas>
     </div>
     <div class="card">
+      <h3>Điện áp</h3>
+      <canvas id="gaugeVolt"></canvas>
+    </div>
+  </div>
+
+  <!-- Hàng 2: Chart -->
+  <div class="dashboard">
+    <div class="card" style="grid-column: span 2;">
       <h3>Chart Nhiệt độ</h3>
       <canvas id="chartTemp"></canvas>
     </div>
-    <div class="card">
+    <div class="card" style="grid-column: span 2;">
       <h3>Chart Điện áp</h3>
       <canvas id="chartVolt"></canvas>
     </div>
@@ -57,13 +67,13 @@
   <script>
     const token = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI";
 
-    // Gauge (fake bằng chart doughnut)
-    function createGauge(ctx, label, color) {
+    // Hàm tạo gauge
+    function createGauge(ctx, max, color, unit="") {
       return new Chart(ctx, {
         type: "doughnut",
         data: {
           datasets: [{
-            data: [0, 100],
+            data: [0, max],
             backgroundColor: [color, "#eee"],
             borderWidth: 0
           }]
@@ -75,32 +85,50 @@
           plugins: {
             datalabels: {
               formatter: (value, context) => {
-                if (context.dataIndex === 0) return value.toFixed(1);
+                if (context.dataIndex === 0) {
+                  return value.toFixed(1) + unit;
+                }
                 return "";
               },
               color: "#333",
-              font: { size: 24, weight: "bold" }
-            }
+              font: { size: 22, weight: "bold" },
+              anchor: "center",
+              align: "center"
+            },
+            legend: { display: false },
+            tooltip: { enabled: false }
           }
         },
         plugins: [ChartDataLabels]
       });
     }
 
-    const gaugeTemp = createGauge(document.getElementById("gaugeTemp"), "Nhiệt độ", "#673ab7");
-    const gaugeHumi = createGauge(document.getElementById("gaugeHumi"), "Độ ẩm", "#009688");
+    // Tạo gauge
+    const gaugeTemp = createGauge(document.getElementById("gaugeTemp"), 100, "#673ab7", "°C");
+    const gaugeHumi = createGauge(document.getElementById("gaugeHumi"), 100, "#009688", "%");
+    const gaugeVolt = createGauge(document.getElementById("gaugeVolt"), 100, "#e91e63", "V");
 
-    // Chart thời gian
+    // Tạo chart
     const chartTemp = new Chart(document.getElementById("chartTemp"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "Nhiệt độ", data: [], borderColor: "#3f51b5" }] },
-      options: { scales: { x: { display: true }, y: { beginAtZero: false } } }
+      data: { labels: [], datasets: [{ label: "Nhiệt độ (°C)", data: [], borderColor: "#3f51b5" }] },
+      options: {
+        scales: {
+          x: { title: { display: true, text: "Thời gian" } },
+          y: { beginAtZero: false }
+        }
+      }
     });
 
     const chartVolt = new Chart(document.getElementById("chartVolt"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "Voltage", data: [], borderColor: "#e91e63" }] },
-      options: { scales: { x: { display: true }, y: { beginAtZero: false } } }
+      data: { labels: [], datasets: [{ label: "Điện áp (V)", data: [], borderColor: "#e91e63" }] },
+      options: {
+        scales: {
+          x: { title: { display: true, text: "Thời gian" } },
+          y: { beginAtZero: false }
+        }
+      }
     });
 
     async function getData() {
@@ -113,27 +141,32 @@
         const h = parseFloat(humi) || 0;
         const v = parseFloat(volt) || 0;
 
-        // update gauge
+        // Cập nhật gauge
         gaugeTemp.data.datasets[0].data = [t, 100 - t];
         gaugeHumi.data.datasets[0].data = [h, 100 - h];
+        gaugeVolt.data.datasets[0].data = [v, 100 - v];
         gaugeTemp.update();
         gaugeHumi.update();
+        gaugeVolt.update();
 
-        // update chart
+        // Cập nhật chart
         const now = new Date().toLocaleTimeString();
         chartTemp.data.labels.push(now);
         chartTemp.data.datasets[0].data.push(t);
+
         chartVolt.data.labels.push(now);
         chartVolt.data.datasets[0].data.push(v);
 
-        if (chartTemp.data.labels.length > 20) {
+        // Giữ dữ liệu trong vòng 1 ngày (~ 288 bản ghi nếu mỗi 5s)
+        if (chartTemp.data.labels.length > 288) {
           chartTemp.data.labels.shift();
           chartTemp.data.datasets[0].data.shift();
         }
-        if (chartVolt.data.labels.length > 20) {
+        if (chartVolt.data.labels.length > 288) {
           chartVolt.data.labels.shift();
           chartVolt.data.datasets[0].data.shift();
         }
+
         chartTemp.update();
         chartVolt.update();
       } catch (e) {
