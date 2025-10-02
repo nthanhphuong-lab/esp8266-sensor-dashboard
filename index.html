@@ -3,41 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <title>ESP8266 Sensor Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-gauges@2.1.7/gauge.min.js?v=20251002"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f8fc;
+    }
+    h1 {
+      margin: 20px;
+    }
+    .gauges {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      margin-top: 30px;
+    }
+    .gauge-container {
+      text-align: center;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-gauges@2.1.7/gauge.min.js"></script>
 </head>
-<body style="text-align:center; background:#f5f8fc">
-  <h2>ESP8266 Sensor Dashboard</h2>
+<body>
+  <h1>ESP8266 Sensor Dashboard</h1>
 
-  <canvas id="tempGauge" data-type="radial-gauge"
-    data-units="°C" data-min-value="0" data-max-value="100"
-    data-major-ticks="0,20,40,60,80,100"
-    data-highlights='[{"from":70,"to":100,"color":"rgba(200,50,50,.75)"}]'
-    data-value="0"
-    style="width:250px;height:250px;"></canvas>
-
-  <canvas id="humGauge" data-type="radial-gauge"
-    data-units="%" data-min-value="0" data-max-value="100"
-    data-major-ticks="0,20,40,60,80,100"
-    data-highlights='[{"from":80,"to":100,"color":"rgba(50,200,50,.75)"}]'
-    data-value="0"
-    style="width:250px;height:250px;"></canvas>
-
-  <canvas id="voltGauge" data-type="radial-gauge"
-    data-units="V" data-min-value="0" data-max-value="5"
-    data-major-ticks="0,1,2,3,4,5"
-    data-value="0"
-    style="width:250px;height:250px;"></canvas>
+  <div class="gauges">
+    <div class="gauge-container">
+      <canvas id="tempGauge" width="200" height="200"></canvas>
+      <div>🌡 Temperature</div>
+    </div>
+    <div class="gauge-container">
+      <canvas id="humGauge" width="200" height="200"></canvas>
+      <div>💧 Humidity</div>
+    </div>
+    <div class="gauge-container">
+      <canvas id="voltGauge" width="200" height="200"></canvas>
+      <div>🔋 Voltage</div>
+    </div>
+  </div>
 
   <script>
-    const tempGauge = document.gauges.get('tempGauge');
-    const humGauge  = document.gauges.get('humGauge');
-    const voltGauge = document.gauges.get('voltGauge');
+    // Tạo gauges
+    const tempGauge = new RadialGauge({
+      renderTo: 'tempGauge',
+      width: 200,
+      height: 200,
+      units: "°C",
+      minValue: 0,
+      maxValue: 100,
+      majorTicks: ["0","20","40","60","80","100"],
+      minorTicks: 2,
+      strokeTicks: true,
+      highlights: [
+        { from: 0, to: 50, color: "rgba(0,255,0,.3)" },
+        { from: 50, to: 80, color: "rgba(255,255,0,.3)" },
+        { from: 80, to: 100, color: "rgba(255,30,0,.3)" }
+      ],
+      value: 0,
+      animationDuration: 500,
+      animationRule: "linear"
+    }).draw();
 
-    setInterval(() => {
-      tempGauge.value = Math.random() * 100;
-      humGauge.value  = Math.random() * 100;
-      voltGauge.value = (Math.random() * 5).toFixed(2);
-    }, 3000);
+    const humGauge = new RadialGauge({
+      renderTo: 'humGauge',
+      width: 200,
+      height: 200,
+      units: "%",
+      minValue: 0,
+      maxValue: 100,
+      majorTicks: ["0","20","40","60","80","100"],
+      minorTicks: 2,
+      strokeTicks: true,
+      highlights: [
+        { from: 0, to: 40, color: "rgba(255,30,0,.3)" },
+        { from: 40, to: 70, color: "rgba(0,255,0,.3)" },
+        { from: 70, to: 100, color: "rgba(0,0,255,.3)" }
+      ],
+      value: 0,
+      animationDuration: 500,
+      animationRule: "linear"
+    }).draw();
+
+    const voltGauge = new RadialGauge({
+      renderTo: 'voltGauge',
+      width: 200,
+      height: 200,
+      units: "V",
+      minValue: 0,
+      maxValue: 20,
+      majorTicks: ["0","5","10","15","20"],
+      minorTicks: 2,
+      strokeTicks: true,
+      highlights: [
+        { from: 0, to: 10, color: "rgba(255,30,0,.3)" },
+        { from: 10, to: 15, color: "rgba(255,255,0,.3)" },
+        { from: 15, to: 20, color: "rgba(0,255,0,.3)" }
+      ],
+      value: 0,
+      animationDuration: 500,
+      animationRule: "linear"
+    }).draw();
+
+    // Hàm update giá trị random (test hiển thị gauge)
+    function updateGauges() {
+      tempGauge.value = Math.floor(Math.random() * 100);
+      humGauge.value = Math.floor(Math.random() * 100);
+      voltGauge.value = (Math.random() * 20).toFixed(1);
+    }
+
+    // Cập nhật mỗi 5 giây
+    setInterval(updateGauges, 5000);
+
+    // Gọi 1 lần khi load trang
+    updateGauges();
   </script>
 </body>
 </html>
