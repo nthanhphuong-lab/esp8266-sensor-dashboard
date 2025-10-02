@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ESP8266 Monitor</title>
+  <title>ESP8266 Sensor Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
+    h2 { margin: 20px; }
     .gauge-container { display: inline-block; margin: 20px; }
   </style>
 </head>
 <body>
-  <h2>Giám sát ESP8266 (Blynk Cloud)</h2>
+  <h2>ESP8266 Sensor Dashboard</h2>
 
   <div class="gauge-container">
     <canvas id="gaugeTemp" data-type="radial-gauge"
-      data-title="Nhiệt độ (°C)"
+      data-title="Temperature"
       data-min-value="0" data-max-value="100"
       data-units="°C"
       data-major-ticks="0,10,20,30,40,50,60,70,80,90,100"
@@ -27,7 +28,7 @@
 
   <div class="gauge-container">
     <canvas id="gaugeHum" data-type="radial-gauge"
-      data-title="Độ ẩm (%)"
+      data-title="Humidity"
       data-min-value="0" data-max-value="100"
       data-units="%"
       data-major-ticks="0,20,40,60,80,100"
@@ -40,7 +41,7 @@
 
   <div class="gauge-container">
     <canvas id="gaugeVolt" data-type="radial-gauge"
-      data-title="Điện áp (V)"
+      data-title="Voltage"
       data-min-value="0" data-max-value="10"
       data-units="V"
       data-major-ticks="0,2,4,6,8,10"
@@ -52,13 +53,14 @@
   </div>
 
   <script>
-    const TOKEN = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI"; // Thay bằng token thật của bạn
+    const TOKEN = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI"; // Token của bạn
 
     async function fetchValue(pin) {
       let url = `https://blynk.cloud/external/api/get?token=${TOKEN}&${pin}`;
       try {
         let res = await fetch(url);
         let text = await res.text();
+        console.log(`Pin ${pin}:`, text);
         return parseFloat(text);
       } catch (e) {
         console.error("Lỗi fetch:", e);
@@ -71,12 +73,11 @@
       let hum = await fetchValue("v2");
       let volt = await fetchValue("v3");
 
-      document.gaugeTemp.value = temp;
-      document.gaugeHum.value = hum;
-      document.gaugeVolt.value = volt;
+      if (!isNaN(temp)) document.gaugeTemp.value = temp;
+      if (!isNaN(hum)) document.gaugeHum.value = hum;
+      if (!isNaN(volt)) document.gaugeVolt.value = volt;
     }
 
-    // Gọi lần đầu và sau đó lặp lại mỗi 5s
     setInterval(updateGauges, 5000);
     updateGauges();
   </script>
