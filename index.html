@@ -23,19 +23,20 @@
     .card {
       text-align: center;
     }
-    canvas {
-      max-width: 100%;
-    }
     .charts {
       display: flex;
       justify-content: space-around;
+      gap: 20px;
     }
     .chart-box {
-      width: 48%;
+      flex: 1;
       background: white;
       padding: 15px;
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    canvas {
+      max-width: 100%;
     }
   </style>
 </head>
@@ -61,11 +62,15 @@
   <!-- Hàng dưới: Biểu đồ -->
   <div class="charts">
     <div class="chart-box">
-      <h3>Nhiệt độ theo thời gian</h3>
+      <h3>Nhiệt độ (24h)</h3>
       <canvas id="chartTemp"></canvas>
     </div>
     <div class="chart-box">
-      <h3>Điện áp theo thời gian</h3>
+      <h3>Độ ẩm (24h)</h3>
+      <canvas id="chartHumi"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Điện áp (24h)</h3>
       <canvas id="chartVolt"></canvas>
     </div>
   </div>
@@ -77,8 +82,8 @@
     function createGauge(elementId, min, max, unit, color) {
       return new RadialGauge({
         renderTo: elementId,
-        width: 250,
-        height: 250,
+        width: 200,
+        height: 200,
         units: unit,
         minValue: min,
         maxValue: max,
@@ -89,6 +94,7 @@
         colorPlate: "#fff",
         colorNumbers: "#000",
         valueBox: true,
+        valueBoxFontColor: "#d32f2f",
         animation: true,
         animationDuration: 500,
         animationRule: "linear",
@@ -106,85 +112,88 @@
 
     // Chart config
     const ctxTemp = document.getElementById('chartTemp').getContext('2d');
+    const ctxHumi = document.getElementById('chartHumi').getContext('2d');
     const ctxVolt = document.getElementById('chartVolt').getContext('2d');
 
     const chartTemp = new Chart(ctxTemp, {
       type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Nhiệt độ (°C)',
-          borderColor: 'rgba(103,58,183,1)',
-          backgroundColor: 'rgba(103,58,183,0.2)',
-          data: [],
-          fill: true,
-          tension: 0.3
-        }]
-      },
+      data: { labels: [], datasets: [{
+        label: 'Nhiệt độ (°C)',
+        borderColor: '#ff7300',
+        backgroundColor: 'rgba(255,115,0,0.2)',
+        data: [],
+        fill: true,
+        tension: 0.3
+      }]},
+      options: { responsive: true }
+    });
+
+    const chartHumi = new Chart(ctxHumi, {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        label: 'Độ ẩm (%)',
+        borderColor: '#00a65a',
+        backgroundColor: 'rgba(0,166,90,0.2)',
+        data: [],
+        fill: true,
+        tension: 0.3
+      }]},
       options: { responsive: true }
     });
 
     const chartVolt = new Chart(ctxVolt, {
       type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Điện áp (V)',
-          borderColor: 'rgba(233,30,99,1)',
-          backgroundColor: 'rgba(233,30,99,0.2)',
-          data: [],
-          fill: true,
-          tension: 0.3
-        }]
-      },
+      data: { labels: [], datasets: [{
+        label: 'Điện áp (V)',
+        borderColor: '#0070ff',
+        backgroundColor: 'rgba(0,112,255,0.2)',
+        data: [],
+        fill: true,
+        tension: 0.3
+      }]},
       options: { responsive: true }
     });
 
-    // Hàm lấy dữ liệu từ Blynk API
+    // Hàm lấy dữ liệu từ Blynk
     async function fetchBlynkData() {
       try {
-        const [v1, v2, v3] = await Promise.all([
-          fetch(`https://blynk.cloud/external/api/get?token=${token}&v1`).then(r => r.text()),
-          fetch(`https://blynk.cloud/external/api/get?token=${token}&v2`).then(r => r.text()),
-          fetch(`https://blynk.cloud/external/api/get?token=${token}&v3`).then(r => r.text())
+        const [temp, humi, volt] = await Promise.all([
+          fetch(`https://blynk.cloud/external/api/get?token=${token}&v1`).then(r => r.json()),
+          fetch(`https://blynk.cloud/external/api/get?token=${token}&v2`).then(r => r.json()),
+          fetch(`https://blynk.cloud/external/api/get?token=${token}&v3`).then(r => r.json())
         ]);
 
-        const now = new Date().toLocaleTimeString();
-        const temp = parseFloat(v1) || 0;
-        const humi = parseFloat(v2) || 0;
-        const volt = parseFloat(v3) || 0;
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
         // Update gauge
         gaugeTemp.value = temp;
         gaugeHumi.value = humi;
         gaugeVolt.value = volt;
 
-        // Update chart nhiệt độ
-        chartTemp.data.labels.push(now);
-        chartTemp.data.datasets[0].data.push(temp);
-        if(chartTemp.data.labels.length > 20) {
-          chartTemp.data.labels.shift();
-          chartTemp.data.datasets[0].data.shift();
+        // Update charts
+        function updateChart(chart, value) {
+          chart.data.labels.push(timeLabel);
+          chart.data.datasets[0].data.push(value);
+          if(chart.data.labels.length > 288) { // 24h ~ 288 điểm (5 phút/lần)
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+          }
+          chart.update();
         }
-        chartTemp.update();
 
-        // Update chart điện áp
-        chartVolt.data.labels.push(now);
-        chartVolt.data.datasets[0].data.push(volt);
-        if(chartVolt.data.labels.length > 20) {
-          chartVolt.data.labels.shift();
-          chartVolt.data.datasets[0].data.shift();
-        }
-        chartVolt.update();
+        updateChart(chartTemp, temp);
+        updateChart(chartHumi, humi);
+        updateChart(chartVolt, volt);
 
-      } catch (err) {
-        console.error("Lỗi khi gọi API Blynk:", err);
+      } catch (e) {
+        console.error("Error fetch Blynk:", e);
       }
     }
 
-    // Cập nhật mỗi 5 giây
+    // Cập nhật mỗi 5 phút
     fetchBlynkData();
-    setInterval(fetchBlynkData, 5000);
+    setInterval(fetchBlynkData, 300000);
   </script>
 </body>
 </html>
