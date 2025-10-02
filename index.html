@@ -2,113 +2,130 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ESP8266 Sensor Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-doughnutlabel"></script>
+  <title>ESP8266 Gauge Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background: #f4f7fb;
-      padding: 20px;
+      background: #f5f5f5;
     }
-    h1 { color: #333; margin-bottom: 30px; }
+    h2 { margin-top: 20px; }
     .gauge-container {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 30px;
-    }
-    .gauge-box {
-      width: 250px;
-      height: 250px;
+      display: inline-block;
+      margin: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>ESP8266 Sensor Dashboard</h1>
+  <h2>ESP8266 Sensor Gauges</h2>
 
   <div class="gauge-container">
-    <div class="gauge-box">
-      <canvas id="tempGauge"></canvas>
-      <p>🌡 Temperature</p>
-    </div>
-    <div class="gauge-box">
-      <canvas id="humidGauge"></canvas>
-      <p>💧 Humidity</p>
-    </div>
-    <div class="gauge-box">
-      <canvas id="voltGauge"></canvas>
-      <p>🔋 Voltage</p>
-    </div>
+    <canvas id="gauge-temp" width="200" height="200"></canvas>
+    <p>Temperature (°C)</p>
+  </div>
+
+  <div class="gauge-container">
+    <canvas id="gauge-hum" width="200" height="200"></canvas>
+    <p>Humidity (%)</p>
+  </div>
+
+  <div class="gauge-container">
+    <canvas id="gauge-volt" width="200" height="200"></canvas>
+    <p>Voltage (V)</p>
   </div>
 
   <script>
-    const token = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI"; // Blynk token
+    const token = "YOUR_BLYNK_AUTH_TOKEN"; // thay bằng token của bạn
+    const apiUrl = "https://blynk.cloud/external/api/get?token=" + token;
 
-    // Hàm tạo gauge
-    function createGauge(ctx, min, max, unit, color) {
-      return new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          datasets: [{
-            data: [0, max], // giá trị ban đầu
-            backgroundColor: [color, "#eee"],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          rotation: -90,
-          circumference: 180,
-          cutout: "70%",
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false },
-            doughnutLabel: {
-              labels: [
-                {
-                  text: "0" + unit,
-                  font: { size: 20 },
-                  color: "#333"
-                }
-              ]
-            }
-          }
-        }
-      });
+    // Gauge Temperature
+    const gTemp = new RadialGauge({
+      renderTo: 'gauge-temp',
+      width: 200,
+      height: 200,
+      units: "°C",
+      minValue: 0,
+      maxValue: 50,
+      majorTicks: ["0","10","20","30","40","50"],
+      minorTicks: 2,
+      strokeTicks: true,
+      highlights: [
+        { from: 0, to: 35, color: 'rgba(0,200,0,.3)' },
+        { from: 35, to: 50, color: 'rgba(200,0,0,.3)' }
+      ],
+      colorPlate: "#fff",
+      borders: true,
+      needleType: "arrow",
+      needleWidth: 2,
+      animationDuration: 500,
+      animationRule: "linear"
+    }).draw();
+
+    // Gauge Humidity
+    const gHum = new RadialGauge({
+      renderTo: 'gauge-hum',
+      width: 200,
+      height: 200,
+      units: "%",
+      minValue: 0,
+      maxValue: 100,
+      majorTicks: ["0","20","40","60","80","100"],
+      minorTicks: 2,
+      strokeTicks: true,
+      highlights: [
+        { from: 0, to: 60, color: 'rgba(0,200,255,.3)' },
+        { from: 60, to: 100, color: 'rgba(0,0,200,.3)' }
+      ],
+      colorPlate: "#fff",
+      borders: true,
+      needleType: "arrow",
+      needleWidth: 2,
+      animationDuration: 500,
+      animationRule: "linear"
+    }).draw();
+
+    // Gauge Voltage
+    const gVolt = new RadialGauge({
+      renderTo: 'gauge-volt',
+      width: 200,
+      height: 200,
+      units: "V",
+      minValue: 0,
+      maxValue: 5,
+      majorTicks: ["0","1","2","3","4","5"],
+      minorTicks: 2,
+      strokeTicks: true,
+      highlights: [
+        { from: 0, to: 4, color: 'rgba(0,200,0,.3)' },
+        { from: 4, to: 5, color: 'rgba(200,0,0,.3)' }
+      ],
+      colorPlate: "#fff",
+      borders: true,
+      needleType: "arrow",
+      needleWidth: 2,
+      animationDuration: 500,
+      animationRule: "linear"
+    }).draw();
+
+    // Hàm cập nhật dữ liệu từ Blynk
+    function updateGauges() {
+      Promise.all([
+        fetch(apiUrl + "&V1").then(r => r.text()),
+        fetch(apiUrl + "&V2").then(r => r.text()),
+        fetch(apiUrl + "&V3").then(r => r.text())
+      ]).then(values => {
+        let [temp, hum, volt] = values.map(parseFloat);
+
+        if (!isNaN(temp)) gTemp.value = temp;
+        if (!isNaN(hum)) gHum.value = hum;
+        if (!isNaN(volt)) gVolt.value = volt;
+      }).catch(err => console.error("API error:", err));
     }
 
-    // Tạo 3 gauge
-    const tempGauge = createGauge(document.getElementById("tempGauge"), 0, 50, "°C", "#ff5733");
-    const humidGauge = createGauge(document.getElementById("humidGauge"), 0, 100, "%", "#33c1ff");
-    const voltGauge = createGauge(document.getElementById("voltGauge"), 0, 5, "V", "#33cc33");
-
-    // Hàm cập nhật giá trị
-    async function fetchData() {
-      try {
-        let temp = await fetch(`https://blynk.cloud/external/api/get?token=${token}&V1`).then(r => r.text());
-        let humid = await fetch(`https://blynk.cloud/external/api/get?token=${token}&V2`).then(r => r.text());
-        let volt = await fetch(`https://blynk.cloud/external/api/get?token=${token}&V3`).then(r => r.text());
-
-        updateGauge(tempGauge, temp, 50, temp + "°C");
-        updateGauge(humidGauge, humid, 100, humid + "%");
-        updateGauge(voltGauge, volt, 5, volt + "V");
-      } catch (err) {
-        console.error("Error fetching Blynk data:", err);
-      }
-    }
-
-    // Hàm update gauge
-    function updateGauge(chart, value, max, label) {
-      chart.data.datasets[0].data[0] = value;
-      chart.data.datasets[0].data[1] = max - value;
-      chart.options.plugins.doughnutLabel.labels[0].text = label;
-      chart.update();
-    }
-
-    // Gọi lần đầu + 5s cập nhật
-    fetchData();
-    setInterval(fetchData, 5000);
+    // Gọi ngay và lặp lại mỗi 5 giây
+    updateGauges();
+    setInterval(updateGauges, 5000);
   </script>
 </body>
 </html>
