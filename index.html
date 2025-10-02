@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <title>Canvas Gauge Test</title>
+  <!-- Import thư viện -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
 </head>
 <body>
-  <!-- Gauge hiển thị nhiệt độ -->
-  <canvas id="tempGauge" data-type="radial-gauge"
+  <h2>Demo Gauge</h2>
+
+  <canvas id="tempGauge"
+    data-type="radial-gauge"
     data-width="300"
     data-height="300"
     data-units="°C"
@@ -22,20 +27,30 @@
     data-borders="false"
     data-needle-type="arrow"
     data-needle-width="2"
-    data-value="0"
-    data-animation-rule="linear"
     data-animation-duration="500"
-  ></canvas>
+    data-animation-rule="linear"
+    data-value="0">
+  </canvas>
 
   <script>
-    // Lấy đối tượng gauge
-    var tempGauge = document.gauges.get('tempGauge');
+    // Lấy gauge sau khi thư viện đã load
+    window.onload = function() {
+      var tempGauge = document.gauges.get('tempGauge');
 
-    // Cập nhật dữ liệu giả mỗi 2 giây
-    setInterval(() => {
-      let newValue = Math.floor(Math.random() * 100);
-      tempGauge.value = newValue;
-    }, 2000);
+      // Nếu không lấy được bằng get -> dùng trực tiếp object RadialGauge
+      if (!tempGauge) {
+        tempGauge = new RadialGauge({
+          renderTo: 'tempGauge'
+        }).draw();
+      }
+
+      // Cập nhật random mỗi 2 giây
+      setInterval(() => {
+        let newValue = Math.floor(Math.random() * 100);
+        tempGauge.value = newValue;
+        console.log("Update:", newValue);
+      }, 2000);
+    };
   </script>
 </body>
 </html>
