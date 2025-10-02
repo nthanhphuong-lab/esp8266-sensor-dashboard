@@ -78,8 +78,8 @@
   <script>
     const token = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI";
 
-    // Hàm tạo gauge
-    function createGauge(elementId, min, max, unit, color) {
+    // Hàm tạo gauge có custom màu valueBox
+    function createGauge(elementId, min, max, unit, color, valueBoxBg, valueTextColor) {
       return new RadialGauge({
         renderTo: elementId,
         width: 200,
@@ -94,7 +94,9 @@
         colorPlate: "#fff",
         colorNumbers: "#000",
         valueBox: true,
-        valueBoxFontColor: "#d32f2f",
+        colorValueBoxBackground: valueBoxBg,   // màu nền value box
+        colorValueBoxShadow: "rgba(0,0,0,0.3)",
+        colorValueText: valueTextColor,       // màu chữ
         animation: true,
         animationDuration: 500,
         animationRule: "linear",
@@ -105,10 +107,10 @@
       }).draw();
     }
 
-    // Tạo 3 gauge
-    const gaugeTemp = createGauge("gaugeTemp", 0, 100, "°C", "rgba(103,58,183,0.3)");
-    const gaugeHumi = createGauge("gaugeHumi", 0, 100, "%", "rgba(0,150,136,0.3)");
-    const gaugeVolt = createGauge("gaugeVolt", 0, 30, "V", "rgba(233,30,99,0.3)");
+    // Tạo 3 gauge với màu value box khác nhau
+    const gaugeTemp = createGauge("gaugeTemp", 0, 100, "°C", "rgba(103,58,183,0.3)", "#fff3cd", "#d32f2f");  // vàng nhạt, chữ đỏ
+    const gaugeHumi = createGauge("gaugeHumi", 0, 100, "%", "rgba(0,150,136,0.3)", "#cce5ff", "#004085");    // xanh dương nhạt, chữ xanh đậm
+    const gaugeVolt = createGauge("gaugeVolt", 0, 30, "V", "rgba(233,30,99,0.3)", "#d4edda", "#155724");     // xanh lá nhạt, chữ xanh đậm
 
     // Chart config
     const ctxTemp = document.getElementById('chartTemp').getContext('2d');
@@ -193,7 +195,7 @@
 
     // Cập nhật mỗi 5 phút
     fetchBlynkData();
-    setInterval(fetchBlynkData, 300000);
+    setInterval(fetchBlynkData, 5000);
   </script>
 </body>
 </html>
