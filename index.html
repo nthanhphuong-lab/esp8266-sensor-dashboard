@@ -1,61 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>ESP8266 Sensor Dashboard</title>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
+  <title>Blynk Data</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f5f8fc;
-    }
-    h1 {
-      margin: 20px;
-    }
-    .values {
-      display: flex;
-      justify-content: center;
-      gap: 50px;
-      margin-top: 30px;
-    }
-    .value-box {
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      font-size: 22px;
-      width: 150px;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    .box { margin: 20px; font-size: 24px; }
   </style>
 </head>
 <body>
-  <h1>ESP8266 Sensor Dashboard</h1>
-
-  <div class="values">
-    <div class="value-box">
-      🌡 Temp: <span id="tempValue">--</span> °C
-    </div>
-    <div class="value-box">
-      💧 Hum: <span id="humValue">--</span> %
-    </div>
-    <div class="value-box">
-      🔋 Volt: <span id="voltValue">--</span> V
-    </div>
-  </div>
+  <h2>Dữ liệu từ Blynk</h2>
+  <div class="box">🌡️ Nhiệt độ: <span id="temp">--</span> °C</div>
+  <div class="box">💧 Độ ẩm: <span id="humi">--</span> %</div>
+  <div class="box">🔋 Điện áp: <span id="volt">--</span> V</div>
 
   <script>
-    function updateValues() {
-      document.getElementById("tempValue").textContent = (Math.random() * 50).toFixed(1);
-      document.getElementById("humValue").textContent = (Math.random() * 100).toFixed(1);
-      document.getElementById("voltValue").textContent = (Math.random() * 20).toFixed(1);
+    const token = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI";
+
+    async function getData() {
+      try {
+        const t = await fetch(`https://blynk.cloud/external/api/get?token=${token}&v1`).then(r=>r.text());
+        const h = await fetch(`https://blynk.cloud/external/api/get?token=${token}&v2`).then(r=>r.text());
+        const v = await fetch(`https://blynk.cloud/external/api/get?token=${token}&v3`).then(r=>r.text());
+
+        document.getElementById("temp").textContent = t;
+        document.getElementById("humi").textContent = h;
+        document.getElementById("volt").textContent = v;
+      } catch (e) {
+        console.error("Lỗi:", e);
+      }
     }
 
-    // cập nhật mỗi 5 giây
-    setInterval(updateValues, 5000);
-    updateValues();
+    // Lấy dữ liệu ngay khi load
+    getData();
+    // Cập nhật mỗi 5 giây
+    setInterval(getData, 5000);
   </script>
 </body>
 </html>
