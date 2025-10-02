@@ -15,110 +15,47 @@
     h1 {
       margin: 20px;
     }
-    .gauges {
+    .values {
       display: flex;
       justify-content: center;
       gap: 50px;
       margin-top: 30px;
     }
-    .gauge-container {
-      text-align: center;
+    .value-box {
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      font-size: 22px;
+      width: 150px;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-gauges@2.1.7/gauge.min.js"></script>
 </head>
 <body>
   <h1>ESP8266 Sensor Dashboard</h1>
 
-  <div class="gauges">
-    <div class="gauge-container">
-      <canvas id="tempGauge" width="200" height="200"></canvas>
-      <div>🌡 Temperature</div>
+  <div class="values">
+    <div class="value-box">
+      🌡 Temp: <span id="tempValue">--</span> °C
     </div>
-    <div class="gauge-container">
-      <canvas id="humGauge" width="200" height="200"></canvas>
-      <div>💧 Humidity</div>
+    <div class="value-box">
+      💧 Hum: <span id="humValue">--</span> %
     </div>
-    <div class="gauge-container">
-      <canvas id="voltGauge" width="200" height="200"></canvas>
-      <div>🔋 Voltage</div>
+    <div class="value-box">
+      🔋 Volt: <span id="voltValue">--</span> V
     </div>
   </div>
 
   <script>
-    // Tạo gauges
-    const tempGauge = new RadialGauge({
-      renderTo: 'tempGauge',
-      width: 200,
-      height: 200,
-      units: "°C",
-      minValue: 0,
-      maxValue: 100,
-      majorTicks: ["0","20","40","60","80","100"],
-      minorTicks: 2,
-      strokeTicks: true,
-      highlights: [
-        { from: 0, to: 50, color: "rgba(0,255,0,.3)" },
-        { from: 50, to: 80, color: "rgba(255,255,0,.3)" },
-        { from: 80, to: 100, color: "rgba(255,30,0,.3)" }
-      ],
-      value: 0,
-      animationDuration: 500,
-      animationRule: "linear"
-    }).draw();
-
-    const humGauge = new RadialGauge({
-      renderTo: 'humGauge',
-      width: 200,
-      height: 200,
-      units: "%",
-      minValue: 0,
-      maxValue: 100,
-      majorTicks: ["0","20","40","60","80","100"],
-      minorTicks: 2,
-      strokeTicks: true,
-      highlights: [
-        { from: 0, to: 40, color: "rgba(255,30,0,.3)" },
-        { from: 40, to: 70, color: "rgba(0,255,0,.3)" },
-        { from: 70, to: 100, color: "rgba(0,0,255,.3)" }
-      ],
-      value: 0,
-      animationDuration: 500,
-      animationRule: "linear"
-    }).draw();
-
-    const voltGauge = new RadialGauge({
-      renderTo: 'voltGauge',
-      width: 200,
-      height: 200,
-      units: "V",
-      minValue: 0,
-      maxValue: 20,
-      majorTicks: ["0","5","10","15","20"],
-      minorTicks: 2,
-      strokeTicks: true,
-      highlights: [
-        { from: 0, to: 10, color: "rgba(255,30,0,.3)" },
-        { from: 10, to: 15, color: "rgba(255,255,0,.3)" },
-        { from: 15, to: 20, color: "rgba(0,255,0,.3)" }
-      ],
-      value: 0,
-      animationDuration: 500,
-      animationRule: "linear"
-    }).draw();
-
-    // Hàm update giá trị random (test hiển thị gauge)
-    function updateGauges() {
-      tempGauge.value = Math.floor(Math.random() * 100);
-      humGauge.value = Math.floor(Math.random() * 100);
-      voltGauge.value = (Math.random() * 20).toFixed(1);
+    function updateValues() {
+      document.getElementById("tempValue").textContent = (Math.random() * 50).toFixed(1);
+      document.getElementById("humValue").textContent = (Math.random() * 100).toFixed(1);
+      document.getElementById("voltValue").textContent = (Math.random() * 20).toFixed(1);
     }
 
-    // Cập nhật mỗi 5 giây
-    setInterval(updateGauges, 5000);
-
-    // Gọi 1 lần khi load trang
-    updateGauges();
+    // cập nhật mỗi 5 giây
+    setInterval(updateValues, 5000);
+    updateValues();
   </script>
 </body>
 </html>
