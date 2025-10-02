@@ -71,6 +71,8 @@
   </div>
 
   <script>
+    const token = "djlxGXmIjuPjubwUqdVCMgB76av9UhNI";
+
     // Hàm tạo gauge
     function createGauge(elementId, min, max, unit, color) {
       return new RadialGauge({
@@ -138,37 +140,51 @@
       options: { responsive: true }
     });
 
-    // Cập nhật dữ liệu random mỗi 5 giây
-    setInterval(() => {
-      const now = new Date().toLocaleTimeString();
-      const temp = (20 + Math.random()*10).toFixed(1);
-      const humi = (40 + Math.random()*30).toFixed(1);
-      const volt = (12 + Math.random()*3).toFixed(2);
+    // Hàm lấy dữ liệu từ Blynk API
+    async function fetchBlynkData() {
+      try {
+        const [v1, v2, v3] = await Promise.all([
+          fetch(`https://blynk.cloud/external/api/get?token=${token}&v1`).then(r => r.text()),
+          fetch(`https://blynk.cloud/external/api/get?token=${token}&v2`).then(r => r.text()),
+          fetch(`https://blynk.cloud/external/api/get?token=${token}&v3`).then(r => r.text())
+        ]);
 
-      // Update gauge
-      gaugeTemp.value = temp;
-      gaugeHumi.value = humi;
-      gaugeVolt.value = volt;
+        const now = new Date().toLocaleTimeString();
+        const temp = parseFloat(v1) || 0;
+        const humi = parseFloat(v2) || 0;
+        const volt = parseFloat(v3) || 0;
 
-      // Update chart nhiệt độ
-      chartTemp.data.labels.push(now);
-      chartTemp.data.datasets[0].data.push(temp);
-      if(chartTemp.data.labels.length > 20) {
-        chartTemp.data.labels.shift();
-        chartTemp.data.datasets[0].data.shift();
+        // Update gauge
+        gaugeTemp.value = temp;
+        gaugeHumi.value = humi;
+        gaugeVolt.value = volt;
+
+        // Update chart nhiệt độ
+        chartTemp.data.labels.push(now);
+        chartTemp.data.datasets[0].data.push(temp);
+        if(chartTemp.data.labels.length > 20) {
+          chartTemp.data.labels.shift();
+          chartTemp.data.datasets[0].data.shift();
+        }
+        chartTemp.update();
+
+        // Update chart điện áp
+        chartVolt.data.labels.push(now);
+        chartVolt.data.datasets[0].data.push(volt);
+        if(chartVolt.data.labels.length > 20) {
+          chartVolt.data.labels.shift();
+          chartVolt.data.datasets[0].data.shift();
+        }
+        chartVolt.update();
+
+      } catch (err) {
+        console.error("Lỗi khi gọi API Blynk:", err);
       }
-      chartTemp.update();
+    }
 
-      // Update chart điện áp
-      chartVolt.data.labels.push(now);
-      chartVolt.data.datasets[0].data.push(volt);
-      if(chartVolt.data.labels.length > 20) {
-        chartVolt.data.labels.shift();
-        chartVolt.data.datasets[0].data.shift();
-      }
-      chartVolt.update();
-
-    }, 5000);
+    // Cập nhật mỗi 5 giây
+    fetchBlynkData();
+    setInterval(fetchBlynkData, 5000);
   </script>
 </body>
 </html>
